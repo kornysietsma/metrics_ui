@@ -59,6 +59,37 @@ class AuthorsStrategy extends LinearScaleStrategy {
     }
 }
 
+class JsComplexityStrategy extends LinearScaleStrategy {
+    constructor(redish, blueish) {
+        super(redish, blueish, [0, 14]);
+        this.maxComplexity = 14;
+        this.nutralColor = d3.rgb('green');
+    }
+
+    getColor(d, parentColor, scale) {
+        if (d.children) {
+            return parentColor;
+        }
+        
+        if (d.data.jscomplexity && 'cyclomatic' in d.data.jscomplexity) {
+            return scale(this.maxComplexity - d.data.jscomplexity.cyclomatic);
+        } else {
+            return this.nutralColor;
+        }
+    }
+    
+    getStroke(d, parentColor) {
+        if (d.children) {
+            return parentColor;
+        }
+        if (d.data.jscomplexity && 'cyclomatic' in d.data.jscomplexity) {
+            return this.getColor(d, parentColor, this.darkerRedToBlueLinearScale);
+        } else {
+            return this.nutralColor.darker();
+        }
+    }
+}
+
 class LanguageStrategy {
     constructor() {
         this.scale = d3.scale.category20();
@@ -129,6 +160,8 @@ export default class TreeMap {
                 return new AuthorsStrategy(this.redish, this.blueish);
             case 'language':
                 return new LanguageStrategy();
+            case 'jscomplexity':
+                return new JsComplexityStrategy(this.redish, this.blueish);
         }
     }
 

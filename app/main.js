@@ -4,5 +4,6 @@ import TreeMap from './TreeMap.js';
 window.treemap = new TreeMap();
 //window.treemap.render("age");
 //window.treemap.render("authors");
-window.treemap.render("language");
+//window.treemap.render("language");
+window.treemap.render("jscomplexity");
 
