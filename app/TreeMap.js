@@ -141,16 +141,20 @@ export default class TreeMap {
         this.treemap = d3.layout.treemap()
             .size([this.w, this.h])
             .padding(d => {
-                return this.showTitle(d) ? [16,1,1,1] : 1
+                return this.showTitle()(d) ? [16,1,1,1] : 1
             })
             .value(d => d.data.cloc ? d.data.cloc.code : null);
 
-    }
+        this.tooltip = d3
+            .select("body")
+            .append("div")
+            .attr("class", "tooltip");
 
-    showTitle(d) {
+    }
+    showTitle() { return (d) => {
         if (d.value < this.minValueForTitle) return 0;
         return d.children && d.depth <= this.maxTitleDepth;
-    }
+    }}
 
     getStragegy(outputType) {
         switch (outputType) {
@@ -163,6 +167,38 @@ export default class TreeMap {
             case 'jscomplexity':
                 return new JsComplexityStrategy(this.redish, this.blueish);
         }
+    }
+
+    mouseover() {
+        return (d) => {
+            console.log(this.tooltip);
+            this.tooltip.transition()
+                .duration(200);
+            this.tooltip
+                .style("opacity", 0.9);
+            this.tooltip.html(this.formatTooltip(d))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY) + "px");
+        };
+    }
+
+    mouseout() {
+        return (d) => {
+            this.tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
+    }
+
+    formatTooltip(d) {
+            if (d.data) {
+                return `${d.name}<pre>${JSON.stringify(d.data, null, 2)}</pre>`
+            } else {
+                //console.log(d);
+                const {area, depth, value} = d;
+                const data = {area, depth, value};
+                return `${d.name}<pre>${JSON.stringify(data, null, 2)}</pre>`
+            }
     }
 
     //outputType can be "age" or "authors"
@@ -180,21 +216,16 @@ export default class TreeMap {
             .append("g")
             .attr("transform", "translate(-.5,-.5)");
 
-        var tooltip = d3
-            .select("body")
-            .append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0);
 
-        d3.json("/data/metrics.json", function(json) {
+        d3.json("/data/metrics.json", (json) => {
             var cell = svg.data([json]).selectAll("g")
                 .data(self.treemap)
                 .enter().append("g")
                 .attr("class", "cell")
                 .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
 
-            cell.on("mouseover", mouseover)
-                .on("mouseout", mouseout);
+            cell.on("mouseover", this.mouseover())
+                .on("mouseout", this.mouseout());
 
             cell.append("rect")
                 .attr("width", d => d.dx)
@@ -211,36 +242,9 @@ export default class TreeMap {
                 .attr("class", "labelbody")
                 .append("div")
                 .attr("class", "label")
-                .text(d => self.showTitle(d) ? d.name : null)
+                .text(d => this.showTitle()(d) ? d.name : null)
                 .attr("text-anchor", "middle");
 
-            function formatTooltip(d) {
-                if (d.data) {
-                    return `${d.name}<pre>${JSON.stringify(d.data, null, 2)}</pre>`
-                } else {
-                    console.log(d);
-                    const {area, depth, value} = d;
-                    const data = {area, depth, value};
-                    return `${d.name}<pre>${JSON.stringify(data, null, 2)}</pre>`
-                }
-            }
-
-            function mouseover(d) {
-                //const text = Object.keys(d.data).map(key => `${key}:${d.data[key]}`).join("<br/>");
-                tooltip.transition()
-                    .duration(200);
-                tooltip
-                    .style("opacity", 0.9);
-                tooltip.html(formatTooltip(d))
-                    .style("left", (d3.event.pageX) + "px")
-                    .style("top", (d3.event.pageY) + "px");
-            }
-
-            function mouseout(d) {
-                tooltip.transition()
-                    .duration(500)
-                    .style("opacity", 0);
-            }
 
             function getCellStroke(d) {
                 return strategy.getStroke(d, self.parentStrokeColor, self.darkerRedToBlueLinearScale);
