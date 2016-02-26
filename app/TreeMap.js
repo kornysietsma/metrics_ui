@@ -12,12 +12,12 @@ class LinearScaleStrategy {
             .domain(domain);
     }
     
-    getFill(d, parentColor) {
-        return this.getColor(d, parentColor, this.colorRedToBlueLinearScale);
+    getFillFn(parentColor) {
+        return (d) => this.getColor(d, parentColor, this.colorRedToBlueLinearScale);
     }
     
-    getStroke(d, parentColor) {
-        return this.getColor(d, parentColor, this.darkerRedToBlueLinearScale);
+    getStrokeFn(parentColor) {
+        return (d) => this.getColor(d, parentColor, this.darkerRedToBlueLinearScale);
     }
 }
 
@@ -78,14 +78,16 @@ class JsComplexityStrategy extends LinearScaleStrategy {
         }
     }
     
-    getStroke(d, parentColor) {
-        if (d.children) {
-            return parentColor;
-        }
-        if (d.data.jscomplexity && 'cyclomatic' in d.data.jscomplexity) {
-            return this.getColor(d, parentColor, this.darkerRedToBlueLinearScale);
-        } else {
-            return this.nutralColor.darker();
+    getStrokeFn(parentColor) {
+        return (d) => {
+            if (d.children) {
+                return parentColor;
+            }
+            if (d.data.jscomplexity && 'cyclomatic' in d.data.jscomplexity) {
+                return this.getColor(d, parentColor, this.darkerRedToBlueLinearScale);
+            } else {
+                return this.nutralColor.darker();
+            }
         }
     }
 }
@@ -96,24 +98,28 @@ class LanguageStrategy {
         this.strokeColor = d3.rgb("black");
     }
     
-    getFill(d, parentColor) {
-        if (d.children) {
-            return parentColor;
+    getFillFn(parentColor) {
+        return (d) => {
+            if (d.children) {
+                return parentColor;
+            }
+
+            if (d.data && d.data.cloc && d.data.cloc.language) {
+                return this.scale(d.data.cloc.language);
+            }
+
+            return this.scale(0);
         }
-        
-        if (d.data && d.data.cloc && d.data.cloc.language) {
-            return this.scale(d.data.cloc.language);
-        }
-        
-        return this.scale(0);
     }
     
-    getStroke(d, parentColor) {
-        if (d.children) {
-            return parentColor;
-        }
-        else {
-           return this.strokeColor; 
+    getStrokeFn(parentColor) {
+        return (d) => {
+            if (d.children) {
+                return parentColor;
+            }
+            else {
+                return this.strokeColor;
+            }
         }
     }
 }
@@ -140,23 +146,21 @@ export default class TreeMap {
 
         this.treemap = d3.layout.treemap()
             .size([this.w, this.h])
-            .padding(d => {
-                return this.showTitle()(d) ? [16,1,1,1] : 1
-            })
+            .padding(d => this.padding(d))
             .value(d => d.data.cloc ? d.data.cloc.code : null);
 
-        this.tooltip = d3
-            .select("body")
-            .append("div")
-            .attr("class", "tooltip");
 
     }
-    showTitle() { return (d) => {
+    padding(d) {
+        return this.showTitle(d) ? [16,1,1,1] : 1
+    }
+
+    showTitle(d) {
         if (d.value < this.minValueForTitle) return 0;
         return d.children && d.depth <= this.maxTitleDepth;
-    }}
+    }
 
-    getStragegy(outputType) {
+    getStrategy(outputType) {
         switch (outputType) {
             case "age":
                 return new AgeStrategy(this.redish, this.blueish);
@@ -169,9 +173,7 @@ export default class TreeMap {
         }
     }
 
-    mouseover() {
-        return (d) => {
-            console.log(this.tooltip);
+    mouseOver(d) {
             this.tooltip.transition()
                 .duration(200);
             this.tooltip
@@ -179,15 +181,13 @@ export default class TreeMap {
             this.tooltip.html(this.formatTooltip(d))
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY) + "px");
-        };
     }
 
-    mouseout() {
-        return (d) => {
+
+    mouseOut(d) {
             this.tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
-        }
     }
 
     formatTooltip(d) {
@@ -203,13 +203,21 @@ export default class TreeMap {
 
     //outputType can be "age" or "authors"
     render(outputType) {
-        var self = this;
+        // TODO: render has all sorts of side effects - and there's no clean-up
+        // needs thought on modularity, and the meaning of calling render multiple times.
+        // the real goal would be to be able to render once, then use d3 magic to re-render
+        //  with a different strategy, different root note, all the rest.
 
         outputType = outputType || "age";
 
-        var strategy = this.getStragegy(outputType);
+        var strategy = this.getStrategy(outputType);
 
-        var svg = d3.select("body").append("svg")
+        this.tooltip = d3
+            .select("body")
+            .append("div")
+            .attr("class", "tooltip");
+
+        this.svg = d3.select("body").append("svg")
             .style("position", "relative")
             .style("width", `${this.w}px`)
             .style("height", `${this.h}px`)
@@ -218,41 +226,33 @@ export default class TreeMap {
 
 
         d3.json("/data/metrics.json", (json) => {
-            var cell = svg.data([json]).selectAll("g")
-                .data(self.treemap)
+            var cell = this.svg.data([json]).selectAll("g")
+                .data(this.treemap)
                 .enter().append("g")
                 .attr("class", "cell")
                 .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
 
-            cell.on("mouseover", this.mouseover())
-                .on("mouseout", this.mouseout());
+            cell.on("mouseover", d => this.mouseOver(d))
+                .on("mouseout", d => this.mouseOut(d));
 
             cell.append("rect")
                 .attr("width", d => d.dx)
                 .attr("height", d => d.dy)
-                .style("fill", d => getCellFill(d))
-                .style("stroke", d => getCellStroke(d))
+                .style("fill", strategy.getFillFn(this.parentFillColor, this.colorRedToBlueLinearScale))
+                .style("stroke", strategy.getStrokeFn(this.parentStrokeColor, this.darkerRedToBlueLinearScale))
                 .style("z-index", d => -d.depth);
 
             cell.append("foreignObject")
                 .attr("class", "foreignObject")
-                .attr("width", d => Math.max(d.dx - self.paddingAllowance, 2))
-                .attr("height", d => Math.max(d.dy - self.paddingAllowance, 2))
+                .attr("width", d => Math.max(d.dx - this.paddingAllowance, 2))
+                .attr("height", d => Math.max(d.dy - this.paddingAllowance, 2))
                 .append("xhtml:body")
                 .attr("class", "labelbody")
                 .append("div")
                 .attr("class", "label")
-                .text(d => this.showTitle()(d) ? d.name : null)
+                .text(d => this.showTitle(d) ? d.name : null)
                 .attr("text-anchor", "middle");
 
-
-            function getCellStroke(d) {
-                return strategy.getStroke(d, self.parentStrokeColor, self.darkerRedToBlueLinearScale);
-            }
-
-            function getCellFill(d) {
-                return strategy.getFill(d, self.parentFillColor, self.colorRedToBlueLinearScale);
-            }
         });
     }
 }
