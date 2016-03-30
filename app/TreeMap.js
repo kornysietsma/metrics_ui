@@ -12,51 +12,37 @@ export const defaultConfig = {
 };
 
 function buildCodeMaatDataFn(maxAge) {
-    return (d) => {
+    return d => {
         const age = _.get(d,["data","code-maat","ageMonths"]);
 
-        if (age) {
-            return maxAge - age;
-        } else {
-            return null;
-        }
+        return age ? maxAge - age : null;
     }
 }
 
 function buildAuthorsDataFn() {
-    return (d) => {
-        return _.get(d, ["data","code-maat","nAuthors"]);
-    }
+    return d => _.get(d, ["data","code-maat","nAuthors"]);
 }
 
 function buildLanguageDataFn() {
-    return (d) => {
-        return _.get(d, ["data","cloc","language"]);
-    }
+    return d => _.get(d, ["data","cloc","language"]);
 }
 
 function buildJsComplexityDataFn(maxComplexity) {
-    return (d) => {
+    return d => {
         const complexity = _.get(d, ["data","jscomplexity","cyclomatic"]);
-        if (complexity) {
-            return maxComplexity - complexity
-        } else {
-            return null;
-        }
+
+        return complexity ?  maxComplexity - complexity : null;
     }
 }
 
 function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScale) {
-    return (d) => {
+    return d => {
         if (d.children) {
             return parentColour;
         }
         const value = dataFn(d);
-        if (value) {
-            return colourScale(value);
-        }
 
-        return defaultColour;
+        return value ? colourScale(value) : defaultColour;
     }
 }
 
@@ -98,7 +84,7 @@ export function strategies(config) {
                 config.parentFillColor,
                 config.neutralColor,
                 languageScale),
-            strokeFn: (d) => { return languageStrokeColor; }
+            strokeFn: d => languageStrokeColor
         },
         jscomplexity: {
             nodeDataFn: jsComplexityDataFn,
@@ -162,7 +148,7 @@ export default class TreeMap {
         if (d.data) {
             return `${d.name}<pre>${JSON.stringify(d.data, null, 2)}</pre>`
         } else {
-            //console.log(d);
+            // TODO: can we use lodash for this:
             const {area, depth, value} = d;
             const data = {area, depth, value};
             return `${d.name}<pre>${JSON.stringify(data, null, 2)}</pre>`
