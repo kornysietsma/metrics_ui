@@ -4,11 +4,12 @@ export const defaultConfig = {
     maxAge: 24,
     maxAuthors: 20,
     maxComplexity: 14,
-    redish: d3.rgb("#E60D0D"),
-    blueish: d3.rgb("#0E34E0"),
-    neutralColor: d3.rgb("green"),
-    parentStrokeColor: d3.rgb("#4E4545"),
-    parentFillColor: d3.rgb("#7D7E8C")
+    badColour: d3.rgb("#E60D0D"),
+    goodColour: d3.rgb("#0E34E0"),
+    neutralColour: d3.rgb("green"),
+    defaultStrokeColour: d3.rgb("black"),
+    parentStrokeColour: d3.rgb("#4E4545"),
+    parentFillColour: d3.rgb("#7D7E8C")
 };
 
 function buildCodeMaatDataFn(maxAge) {
@@ -47,55 +48,55 @@ function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScal
 }
 
 export function strategies(config) {
-    const redBlueScale = d3.scale.linear().range([config.redish, config.blueish]);
-    const darkerRedBlueScale = d3.scale.linear().range([config.redish.darker(), config.blueish.darker()]);
+    const badGoodScale = d3.scale.linear().range([config.badColour, config.goodColour]);
+    const darkerBadGoodScale = d3.scale.linear().range([config.badColour.darker(), config.goodColour.darker()]);
     const codeMaatDataFn = buildCodeMaatDataFn(config.maxAge);
     const authorsDataFn = buildAuthorsDataFn();
     const languageDataFn = buildLanguageDataFn();
     const languageScale = d3.scale.category20();
-    const languageStrokeColor = d3.rgb("black");
+    const languageStrokeColor = config.defaultStrokeColour;
     const jsComplexityDataFn = buildJsComplexityDataFn(config.maxComplexity);
     return {
         age: {
             nodeDataFn: codeMaatDataFn,
             fillFn: buildScaledNodeColourFn(codeMaatDataFn,
-                config.parentFillColor,
-                config.redish, // default assumed to be max age
-                redBlueScale.copy().domain([0,config.maxAge])),
+                config.parentFillColour,
+                config.badColour, // default assumed to be max age
+                badGoodScale.copy().domain([0,config.maxAge])),
             strokeFn: buildScaledNodeColourFn(codeMaatDataFn,
-                config.parentStrokeColor,
-                config.redish,
-                darkerRedBlueScale.copy().domain([0,config.maxAge]))
+                config.parentStrokeColour,
+                config.badColour.darker(),
+                darkerBadGoodScale.copy().domain([0,config.maxAge]))
         },
         authors: {
             nodeDataFn: authorsDataFn,
             fillFn: buildScaledNodeColourFn(authorsDataFn,
-                config.parentFillColor,
-                config.redish, 
-                redBlueScale.copy().domain([0,config.maxAuthors])),
+                config.parentFillColour,
+                config.badColour,
+                badGoodScale.copy().domain([0,config.maxAuthors])),
             strokeFn: buildScaledNodeColourFn(authorsDataFn,
-                config.parentStrokeColor,
-                config.redish,
-                darkerRedBlueScale.copy().domain([0,config.maxAuthors]))
+                config.parentStrokeColour,
+                config.badColour.darker(),
+                darkerBadGoodScale.copy().domain([0,config.maxAuthors]))
         },
         language: {
             nodeDataFn: languageDataFn,
             fillFn: buildScaledNodeColourFn(languageDataFn,
-                config.parentFillColor,
-                config.neutralColor,
+                config.parentFillColour,
+                config.neutralColour,
                 languageScale),
             strokeFn: d => languageStrokeColor
         },
         jscomplexity: {
             nodeDataFn: jsComplexityDataFn,
             fillFn: buildScaledNodeColourFn(jsComplexityDataFn,
-                config.parentFillColor,
-                config.neutralColor,
-                redBlueScale.copy().domain([0,config.maxComplexity])),
+                config.parentFillColour,
+                config.neutralColour,
+                badGoodScale.copy().domain([0,config.maxComplexity])),
             strokeFn: buildScaledNodeColourFn(jsComplexityDataFn,
-                config.parentStrokeColor,
-                config.neutralColor.darker(),
-                darkerRedBlueScale.copy().domain([0,config.maxComplexity]))
+                config.parentStrokeColour,
+                config.neutralColour.darker(),
+                darkerBadGoodScale.copy().domain([0,config.maxComplexity]))
         }
     }
 }
