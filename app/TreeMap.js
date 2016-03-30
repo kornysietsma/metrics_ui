@@ -12,20 +12,20 @@ export const defaultConfig = {
     parentFillColour: d3.rgb("#7D7E8C")
 };
 
-function buildCodeMaatDataFn() {
-    return d => _.get(d,["data","code-maat","ageMonths"]);
+function codeMaatDataFn(d) {
+    return _.get(d,["data","code-maat","ageMonths"]);
 }
 
-function buildAuthorsDataFn() {
-    return d => _.get(d, ["data","code-maat","nAuthors"]);
+function authorsDataFn(d) {
+    return _.get(d, ["data","code-maat","nAuthors"]);
 }
 
-function buildLanguageDataFn() {
-    return d => _.get(d, ["data","cloc","language"]);
+function languageDataFn(d) {
+    return _.get(d, ["data","cloc","language"]);
 }
 
-function buildJsComplexityDataFn() {
-    return d => _.get(d, ["data","jscomplexity","cyclomatic"]);
+function jsComplexityDataFn(d) {
+    return _.get(d, ["data","jscomplexity","cyclomatic"]);
 }
 
 function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScale) {
@@ -42,15 +42,8 @@ function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScal
 export function strategies(config) {
     const badGoodScale = d3.scale.linear().range([config.badColour, config.goodColour]);
     const darkerBadGoodScale = d3.scale.linear().range([config.badColour.darker(), config.goodColour.darker()]);
-    const codeMaatDataFn = buildCodeMaatDataFn();
-    const authorsDataFn = buildAuthorsDataFn();
-    const languageDataFn = buildLanguageDataFn();
-    const languageScale = d3.scale.category20();
-    const languageStrokeColor = config.defaultStrokeColour;
-    const jsComplexityDataFn = buildJsComplexityDataFn();
     return {
         age: {
-            nodeDataFn: codeMaatDataFn,
             fillFn: buildScaledNodeColourFn(codeMaatDataFn,
                 config.parentFillColour,
                 config.badColour,
@@ -61,7 +54,6 @@ export function strategies(config) {
                 darkerBadGoodScale.copy().domain([config.maxAge, 0]))
         },
         authors: {
-            nodeDataFn: authorsDataFn,
             fillFn: buildScaledNodeColourFn(authorsDataFn,
                 config.parentFillColour,
                 config.badColour,
@@ -72,15 +64,13 @@ export function strategies(config) {
                 darkerBadGoodScale.copy().domain([0,config.maxAuthors]))
         },
         language: {
-            nodeDataFn: languageDataFn,
             fillFn: buildScaledNodeColourFn(languageDataFn,
                 config.parentFillColour,
                 config.neutralColour,
-                languageScale),
-            strokeFn: d => languageStrokeColor
+                d3.scale.category20()),
+            strokeFn: d => config.defaultStrokeColour
         },
         jscomplexity: {
-            nodeDataFn: jsComplexityDataFn,
             fillFn: buildScaledNodeColourFn(jsComplexityDataFn,
                 config.parentFillColour,
                 config.neutralColour,
