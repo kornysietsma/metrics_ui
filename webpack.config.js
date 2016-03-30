@@ -30,10 +30,12 @@ var common = {
                 include: APP_PATH
             }
         ],
+        externals: {
+            lodash: 'lodash'
+        },
         plugins: [
             new webpack.ProvidePlugin({
-                d3: 'd3',
-                'THREE': 'three'
+                d3: 'd3'
             })
         ]
     }
