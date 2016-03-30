@@ -12,12 +12,8 @@ export const defaultConfig = {
     parentFillColour: d3.rgb("#7D7E8C")
 };
 
-function buildCodeMaatDataFn(maxAge) {
-    return d => {
-        const age = _.get(d,["data","code-maat","ageMonths"]);
-
-        return age ? maxAge - age : null;
-    }
+function buildCodeMaatDataFn() {
+    return d => _.get(d,["data","code-maat","ageMonths"]);
 }
 
 function buildAuthorsDataFn() {
@@ -28,12 +24,8 @@ function buildLanguageDataFn() {
     return d => _.get(d, ["data","cloc","language"]);
 }
 
-function buildJsComplexityDataFn(maxComplexity) {
-    return d => {
-        const complexity = _.get(d, ["data","jscomplexity","cyclomatic"]);
-
-        return complexity ?  maxComplexity - complexity : null;
-    }
+function buildJsComplexityDataFn() {
+    return d => _.get(d, ["data","jscomplexity","cyclomatic"]);
 }
 
 function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScale) {
@@ -43,30 +35,30 @@ function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScal
         }
         const value = dataFn(d);
 
-        return value ? colourScale(value) : defaultColour;
+        return value === undefined ? defaultColour : colourScale(value);
     }
 }
 
 export function strategies(config) {
     const badGoodScale = d3.scale.linear().range([config.badColour, config.goodColour]);
     const darkerBadGoodScale = d3.scale.linear().range([config.badColour.darker(), config.goodColour.darker()]);
-    const codeMaatDataFn = buildCodeMaatDataFn(config.maxAge);
+    const codeMaatDataFn = buildCodeMaatDataFn();
     const authorsDataFn = buildAuthorsDataFn();
     const languageDataFn = buildLanguageDataFn();
     const languageScale = d3.scale.category20();
     const languageStrokeColor = config.defaultStrokeColour;
-    const jsComplexityDataFn = buildJsComplexityDataFn(config.maxComplexity);
+    const jsComplexityDataFn = buildJsComplexityDataFn();
     return {
         age: {
             nodeDataFn: codeMaatDataFn,
             fillFn: buildScaledNodeColourFn(codeMaatDataFn,
                 config.parentFillColour,
-                config.badColour, // default assumed to be max age
-                badGoodScale.copy().domain([0,config.maxAge])),
+                config.badColour,
+                badGoodScale.copy().domain([config.maxAge, 0])),
             strokeFn: buildScaledNodeColourFn(codeMaatDataFn,
                 config.parentStrokeColour,
                 config.badColour.darker(),
-                darkerBadGoodScale.copy().domain([0,config.maxAge]))
+                darkerBadGoodScale.copy().domain([config.maxAge, 0]))
         },
         authors: {
             nodeDataFn: authorsDataFn,
@@ -92,11 +84,11 @@ export function strategies(config) {
             fillFn: buildScaledNodeColourFn(jsComplexityDataFn,
                 config.parentFillColour,
                 config.neutralColour,
-                badGoodScale.copy().domain([0,config.maxComplexity])),
+                badGoodScale.copy().domain([config.maxComplexity, 0])),
             strokeFn: buildScaledNodeColourFn(jsComplexityDataFn,
                 config.parentStrokeColour,
                 config.neutralColour.darker(),
-                darkerBadGoodScale.copy().domain([0,config.maxComplexity]))
+                darkerBadGoodScale.copy().domain([config.maxComplexity, 0]))
         }
     }
 }
