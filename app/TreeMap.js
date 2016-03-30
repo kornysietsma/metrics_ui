@@ -2,7 +2,7 @@ var _ = require('lodash');
 
 export const defaultConfig = {
     maxAge: 24,
-    maxAuthors: 20,
+    maxAuthors: 5, // i.e. if a file has 5 authors or more, it's ok
     maxComplexity: 14,
     badColour: d3.rgb("#E60D0D"),
     goodColour: d3.rgb("#0E34E0"),
@@ -41,6 +41,9 @@ function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScal
 
 export function strategies(config) {
     const badGoodScale = d3.scale.linear().range([config.badColour, config.goodColour]);
+    const oneAuthorColour = badGoodScale(0.25); // it's pretty bad to have one author - but not nearly as bad as 0
+    const twoAuthorColour = badGoodScale(0.5);  // it's not great to have two authors - but not nearly as bad as 1
+    const authorScale = d3.scale.linear().range([config.badColour, oneAuthorColour, twoAuthorColour, config.goodColour]);
     const darkerBadGoodScale = d3.scale.linear().range([config.badColour.darker(), config.goodColour.darker()]);
     return {
         age: {
@@ -57,7 +60,7 @@ export function strategies(config) {
             fillFn: buildScaledNodeColourFn(authorsDataFn,
                 config.parentFillColour,
                 config.badColour,
-                badGoodScale.copy().domain([0,config.maxAuthors])),
+                authorScale.copy().domain([0,1,2,config.maxAuthors])),
             strokeFn: buildScaledNodeColourFn(authorsDataFn,
                 config.parentStrokeColour,
                 config.badColour.darker(),
