@@ -9,7 +9,9 @@ export const defaultConfig = {
     neutralColour: d3.rgb("green"),
     defaultStrokeColour: d3.rgb("black"),
     parentStrokeColour: d3.rgb("#4E4545"),
-    parentFillColour: d3.rgb("#7D7E8C")
+    parentFillColour: d3.rgb("#7D7E8C"),
+    maxTitleDepth:4,
+    minValueForTitle: 500
 };
 
 function codeMaatDataFn(d) {
@@ -88,14 +90,12 @@ export function strategies(config) {
 
 
 export default class TreeMap {
-    constructor(config, maxTitleDepth = 4, minValueForTitle = 500) {
+    constructor(config) {
         this.config = config;
         this.strategies = strategies(this.config);
         this.w = 960;
         this.h = 700;
         this.paddingAllowance = 2;
-        this.maxTitleDepth = maxTitleDepth;
-        this.minValueForTitle = minValueForTitle;
 
         this.treemap = d3.layout.treemap()
             .size([this.w, this.h])
@@ -109,8 +109,11 @@ export default class TreeMap {
     }
 
     showTitle(d) {
-        if (d.value < this.minValueForTitle) return 0;
-        return d.children && d.depth <= this.maxTitleDepth;
+        if (d.value < this.config.minValueForTitle) {
+            return 0;
+        } else {
+            return d.children && d.depth <= this.config.maxTitleDepth;
+        }
     }
 
     mouseOver(d) {
