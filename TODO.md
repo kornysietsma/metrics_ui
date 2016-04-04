@@ -1,1 +1,1 @@
-* fix so you can change models and re-render!
+* add a simple responsive css so you can get bigger map on bigger screens

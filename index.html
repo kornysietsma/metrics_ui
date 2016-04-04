@@ -11,11 +11,20 @@
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         margin: auto;
         overflow: hidden;
-        width: 960px;
+        width: 1200px;
     }
 
+    #tree {
+        width: 1200px;
+        height: 742px;
+    }
 
-    rect {
+    #controls {
+        display: block;
+        padding: 2px 0 2px 0;
+    }
+
+    .treerect {
         fill: none;
         stroke: #4E4545;
     }
@@ -31,10 +40,11 @@
         cursor: default;
     }
 
-    div.tooltip {
+    .tooltip {
         position: absolute;
         /*text-align: center;*/
         display: inline-block;
+        opacity: 0;
         padding: 4px;
         font: 10px sans-serif;
         background: lightsteelblue;
@@ -44,6 +54,16 @@
         z-index: 1000;
     }
 </style>
+<label id="controls">
+<select id="strategy">
+    <option selected>language</option>
+    <option>age</option>
+    <option>authors</option>
+    <option>jscomplexity</option>
+</select>
+</label>
+<svg id="tree" viewBox="0 0 1200 742" preserveAspectRatio="xMidYMid meet"></svg>
+<div class="tooltip">(no tooltip until you hover over the data)</div>
 <script src="assets/bundle.js"></script>
 </body>
 </html>

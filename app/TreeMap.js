@@ -1,4 +1,5 @@
 var _ = require('lodash');
+var $ = require('jquery');
 
 export const defaultConfig = {
     maxAge: 24,
@@ -90,9 +91,12 @@ export function strategies(config) {
 
 
 export default class TreeMap {
-    constructor(config) {
+    constructor(config, strategySelector) {
         this.config = config;
         this.strategies = strategies(this.config);
+        this.strategySelectorEl = $(strategySelector);
+
+        this.strategySelectorEl.on('change', () => this.update());
         this.w = 960;
         this.h = 700;
         this.paddingAllowance = 2;
@@ -101,7 +105,10 @@ export default class TreeMap {
             .size([this.w, this.h])
             .padding(d => this.padding(d))
             .value(d => d.data.cloc ? d.data.cloc.code : null);
-        
+
+        this.tooltip = d3.select(".tooltip");
+
+        this.svg = d3.select("#tree");
     }
 
     padding(d) {
@@ -144,31 +151,16 @@ export default class TreeMap {
         }
     }
 
-    //outputType can be any valid strategy
-    render(outputType) {
-        // TODO: render has all sorts of side effects - and there's no clean-up
-        // needs thought on modularity, and the meaning of calling render multiple times.
-        // the real goal would be to be able to render once, then use d3 magic to re-render
-        //  with a different strategy, different root note, all the rest.
-        
-        var strategy = this.strategies[outputType];
-        
-        this.tooltip = d3
-            .select("body")
-            .append("div")
-            .attr("class", "tooltip");
+    render() {
+        const strategyName = this.strategySelectorEl.val();
+        const strategy = this.strategies[strategyName];
 
-        this.svg = d3.select("body").append("svg")
-            .style("position", "relative")
-            .style("width", `${this.w}px`)
-            .style("height", `${this.h}px`)
-            .append("g")
-            .attr("transform", "translate(-.5,-.5)");
+        console.log(`rendering strategy ${strategyName}`);
 
+        d3.json("/data/metrics.json", (root) => {
 
-        d3.json("/data/metrics.json", (json) => {
-            var cell = this.svg.data([json]).selectAll("g")
-                .data(this.treemap)
+            var cell = this.svg.datum(root).selectAll("g")
+                .data(this.treemap.nodes)
                 .enter().append("g")
                 .attr("class", "cell")
                 .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
@@ -177,6 +169,7 @@ export default class TreeMap {
                 .on("mouseout", d => this.mouseOut(d));
 
             cell.append("rect")
+                .attr("class", "treerect")
                 .attr("width", d => d.dx)
                 .attr("height", d => d.dy)
                 .style("fill", strategy.fillFn)
@@ -195,6 +188,18 @@ export default class TreeMap {
                 .attr("text-anchor", "middle");
 
         });
+    }
+
+    update() {
+        const strategyName = this.strategySelectorEl.val();
+        const strategy = this.strategies[strategyName];
+
+        console.log(`rendering strategy ${strategyName}`);
+
+        this.svg.selectAll(".treerect")
+            .style("fill", strategy.fillFn)
+            .style("stroke", strategy.strokeFn);
+
     }
 }
 

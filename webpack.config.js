@@ -31,7 +31,8 @@ var common = {
             }
         ],
         externals: {
-            lodash: 'lodash'
+            lodash: 'lodash',
+            jquery: 'jquery'
         },
         plugins: [
             new webpack.ProvidePlugin({
