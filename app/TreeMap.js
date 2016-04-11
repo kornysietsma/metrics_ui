@@ -5,6 +5,7 @@ export const defaultConfig = {
     maxAge: 24,
     maxAuthors: 5, // i.e. if a file has 5 authors or more, it's ok
     maxComplexity: 14,
+    maxCoupling: 1200,  // this is broken, should be scanning data for max coupling. Though d3.js in my example breaks this!
     badColour: d3.rgb("#E60D0D"),
     goodColour: d3.rgb("#0E34E0"),
     neutralColour: d3.rgb("green"),
@@ -16,11 +17,11 @@ export const defaultConfig = {
 };
 
 function codeMaatDataFn(d) {
-    return _.get(d,["data","code-maat","ageMonths"]);
+    return _.get(d,["data","code-maat","ageMonths"]) || _.get(d,["data","code-maat","age-months"]);
 }
 
 function authorsDataFn(d) {
-    return _.get(d, ["data","code-maat","nAuthors"]);
+    return _.get(d, ["data","code-maat","nAuthors"]) || _.get(d, ["data","code-maat","n-authors"]);
 }
 
 function languageDataFn(d) {
@@ -30,6 +31,11 @@ function languageDataFn(d) {
 function jsComplexityDataFn(d) {
     return _.get(d, ["data","jscomplexity","cyclomatic"]);
 }
+
+function couplingDataFn(d) {
+    return _.get(d, ["data","code-maat","soc"]);
+}
+
 
 function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScale) {
     return d => {
@@ -85,6 +91,16 @@ export function strategies(config) {
                 config.parentStrokeColour,
                 config.neutralColour.darker(),
                 darkerBadGoodScale.copy().domain([config.maxComplexity, 0]))
+        },
+        coupling: {
+            fillFn: buildScaledNodeColourFn(couplingDataFn,
+                config.parentFillColour,
+                config.neutralColour,
+                badGoodScale.copy().domain([config.maxCoupling, 0])),
+            strokeFn: buildScaledNodeColourFn(couplingDataFn,
+                config.parentStrokeColour,
+                config.neutralColour.darker(),
+                darkerBadGoodScale.copy().domain([config.maxCoupling, 0]))
         }
     }
 }
