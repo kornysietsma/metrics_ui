@@ -5,6 +5,7 @@ export const defaultConfig = {
     maxAge: 24,
     maxAuthors: 5, // i.e. if a file has 5 authors or more, it's ok
     maxComplexity: 14,
+    maxIndentComplexity: 8,
     maxCoupling: 1200,  // this is broken, should be scanning data for max coupling. Though d3.js in my example breaks this!
     badColour: d3.rgb("#E60D0D"),
     goodColour: d3.rgb("#0E34E0"),
@@ -29,13 +30,16 @@ function languageDataFn(d) {
 }
 
 function jsComplexityDataFn(d) {
-    return _.get(d, ["data","jscomplexity","cyclomatic"]);
+    return _.get(d, ["data","jscomplexity","cyclomatic"]) || _.get(d, ["data","complexity-report","worst-cyclomatic"]);
 }
 
 function couplingDataFn(d) {
     return _.get(d, ["data","code-maat","soc"]);
 }
 
+function indentComplexityDataFn(d) {
+    return _.get(d, ["data","indents","stats","percentiles","90"]);
+}
 
 function buildScaledNodeColourFn(dataFn, parentColour, defaultColour, colourScale) {
     return d => {
@@ -101,7 +105,17 @@ export function strategies(config) {
                 config.parentStrokeColour,
                 config.neutralColour.darker(),
                 darkerBadGoodScale.copy().domain([config.maxCoupling, 0]))
-        }
+        },
+        complexity: {
+            fillFn: buildScaledNodeColourFn(indentComplexityDataFn,
+                config.parentFillColour,
+                config.neutralColour,
+                badGoodScale.copy().domain([config.maxIndentComplexity, 0])),
+            strokeFn: buildScaledNodeColourFn(indentComplexityDataFn,
+                config.parentStrokeColour,
+                config.neutralColour.darker(),
+                darkerBadGoodScale.copy().domain([config.maxIndentComplexity, 0]))
+        },
     }
 }
 
