@@ -119,6 +119,10 @@ export function strategies(config) {
     }
 }
 
+function pathName(node) {
+    if (node.parent && node.parent.parent) return `${pathName(node.parent)}/${node.name}`
+    else return node.name;
+}
 
 export default class TreeMap {
     constructor(config, strategySelector) {
@@ -137,6 +141,8 @@ export default class TreeMap {
             .value(d => d.data.cloc ? d.data.cloc.code : null);
 
         this.tooltip = d3.select(".tooltip");
+
+        this.status = d3.select("#status");
 
         this.svg = d3.select("#tree");
     }
@@ -163,6 +169,10 @@ export default class TreeMap {
             .style("top", (d3.event.pageY) + "px");
     }
 
+    click(d) {
+        this.status.html(this.formatStatus(d));
+    }
+
 
     mouseOut(d) {
         this.tooltip.transition()
@@ -171,13 +181,17 @@ export default class TreeMap {
     }
 
     formatTooltip(d) {
+        return `${pathName(d)}<br/>loc: ${d.value}`
+    }
+
+    formatStatus(d) {
         if (d.data) {
-            return `${d.name}<pre>${JSON.stringify(d.data, null, 2)}</pre>`
+            return `${pathName(d)}<pre>${JSON.stringify(d.data, null, 2)}</pre>`
         } else {
             // TODO: can we use lodash for this:
             const {area, depth, value} = d;
             const data = {area, depth, value};
-            return `${d.name}<pre>${JSON.stringify(data, null, 2)}</pre>`
+            return `${pathName(d)}<pre>${JSON.stringify(data, null, 2)}</pre>`
         }
     }
 
@@ -196,7 +210,8 @@ export default class TreeMap {
                 .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
 
             cell.on("mouseover", d => this.mouseOver(d))
-                .on("mouseout", d => this.mouseOut(d));
+                .on("mouseout", d => this.mouseOut(d))
+                .on("click", d => this.click(d));
 
             cell.append("rect")
                 .attr("class", "treerect")
