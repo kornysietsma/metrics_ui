@@ -13,7 +13,7 @@ export const defaultConfig = {
     defaultStrokeColour: d3.rgb("black"),
     parentStrokeColour: d3.rgb("#4E4545"),
     parentFillColour: d3.rgb("#7D7E8C"),
-    maxTitleDepth:4,
+    maxTitleDepth:2,
     minValueForTitle: 500
 };
 
