@@ -1,3 +1,9 @@
+# Archived!
+
+I'm archiving this - since I wrote this version, webpack and other things have changed a lot.
+
+I have a newer version which works with es6 directly in the browser, that's a lot cleaner - I'll push that soon.
+
 Korny's metrics vizualisation stuff - D3 UI
 ---
 This is a work in progress and in no way ready for sharing!
